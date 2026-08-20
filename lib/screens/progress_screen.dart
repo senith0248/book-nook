@@ -50,7 +50,7 @@ class ProgressScreen extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+         const SizedBox(height: 16),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -60,18 +60,24 @@ class ProgressScreen extends StatelessWidget {
                   Text('Pages Read This Week', style: theme.textTheme.titleMedium),
                   const SizedBox(height: 16),
                   SizedBox(
-                    height: 140,
+                    height: 150,
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: List.generate(weeklyPages.length, (i) {
                         final maxVal = weeklyPages.reduce((a, b) => a > b ? a : b);
-                        final barHeight = (weeklyPages[i] / maxVal) * 100;
+                        final barHeight = (weeklyPages[i] / maxVal) * 90;
                         return Column(
+                          mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            Text('${weeklyPages[i]}',
-                                style: theme.textTheme.labelSmall),
+                            Flexible(
+                              child: Text(
+                                '${weeklyPages[i]}',
+                                style: theme.textTheme.labelSmall,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
                             const SizedBox(height: 4),
                             Container(
                               width: 24,
@@ -82,7 +88,13 @@ class ProgressScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 6),
-                            Text(weekLabels[i], style: theme.textTheme.labelSmall),
+                            Flexible(
+                              child: Text(
+                                weekLabels[i],
+                                style: theme.textTheme.labelSmall,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
                           ],
                         );
                       }),
