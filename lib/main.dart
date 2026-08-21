@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'theme.dart';
 import 'screens/login_screen.dart';
-import 'screens/register_screen.dart';
+import 'providers/library_provider.dart';
+import 'providers/progress_provider.dart';
 
 void main() {
   runApp(const BookNookApp());
@@ -12,16 +14,19 @@ class BookNookApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'BookNook',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.system, // follows the device's light/dark setting
-      home: const LoginScreen(),
-      routes: {
-        '/register': (context) => const RegisterScreen(),
-      },
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LibraryProvider()),
+        ChangeNotifierProvider(create: (_) => ProgressProvider()),
+      ],
+      child: MaterialApp(
+        title: 'BookNook',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light(),
+        darkTheme: AppTheme.dark(),
+        themeMode: ThemeMode.system,
+        home: const LoginScreen(),
+      ),
     );
   }
 }

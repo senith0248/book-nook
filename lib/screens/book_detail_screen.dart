@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/book.dart';
+import '../providers/library_provider.dart';
+
 
 class BookDetailScreen extends StatelessWidget {
   final Book book;
@@ -87,14 +90,31 @@ class BookDetailScreen extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: FilledButton.icon(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Added to your library')),
+                        child: Consumer<LibraryProvider>(
+                          builder: (context, libraryProvider, _) {
+                            final alreadySaved = libraryProvider.isSaved(book.id);
+                            return FilledButton.icon(
+                              onPressed: alreadySaved
+                                  ? null
+                                  : () {
+                                      libraryProvider.addBook(
+                                        bookId: book.id,
+                                        title: book.title,
+                                        author: book.author,
+                                        coverUrl: book.coverUrl,
+                                      );
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                            content: Text('Added to your library')),
+                                      );
+                                    },
+                              icon: Icon(alreadySaved
+                                  ? Icons.bookmark_added
+                                  : Icons.bookmark_add_outlined),
+                              label: Text(
+                                  alreadySaved ? 'In Your Library' : 'Add to Library'),
                             );
                           },
-                          icon: const Icon(Icons.bookmark_add_outlined),
-                          label: const Text('Add to Library'),
                         ),
                       ),
                       const SizedBox(width: 12),
