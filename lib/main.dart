@@ -6,6 +6,7 @@ import 'providers/library_provider.dart';
 import 'providers/progress_provider.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized(); // required before async setup
   runApp(const BookNookApp());
 }
 
@@ -16,8 +17,8 @@ class BookNookApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => LibraryProvider()),
-        ChangeNotifierProvider(create: (_) => ProgressProvider()),
+        ChangeNotifierProvider(create: (_) => LibraryProvider()..loadEntries()),
+        ChangeNotifierProvider(create: (_) => ProgressProvider()..loadLogs()),
       ],
       child: MaterialApp(
         title: 'BookNook',

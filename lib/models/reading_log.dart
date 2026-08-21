@@ -12,4 +12,24 @@ class ReadingLog {
     required this.pagesRead,
     required this.timestamp,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'bookId': bookId,
+      'bookTitle': bookTitle,
+      'pagesRead': pagesRead,
+      'timestamp': timestamp.toIso8601String(),
+    };
+  }
+
+  factory ReadingLog.fromMap(Map<String, dynamic> map) {
+    return ReadingLog(
+      id: map['id'] as String,
+      bookId: map['bookId'] as String,
+      bookTitle: map['bookTitle'] as String,
+      pagesRead: map['pagesRead'] as int,
+      timestamp: DateTime.parse(map['timestamp'] as String),
+    );
+  }
 }

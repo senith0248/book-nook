@@ -1,10 +1,11 @@
 import 'package:flutter/foundation.dart';
+import '../database/db_helper.dart';
 import '../models/reading_log.dart';
 
-/// Holds reading log entries and exposes aggregated stats for the
-/// Progress screen (books read, pages read, weekly breakdown).
+/// Manages reading log entries, backed by the SQLite reading_logs
+/// table, and exposes aggregated stats for the Progress screen.
 class ProgressProvider extends ChangeNotifier {
-  final List<ReadingLog> _logs = [];
+  List<ReadingLog> _logs = [];
 
   List<ReadingLog> get logs {
     final sorted = List<ReadingLog>.from(_logs);
@@ -12,11 +13,19 @@ class ProgressProvider extends ChangeNotifier {
     return sorted;
   }
 
-  void addLog({
+  /// Loads all logs from SQLite. Call this once at startup.
+  Future<void> loadLogs() async {
+    final db = await DBHelper.instance.database;
+    final maps = await db.query('reading_logs');
+    _logs = maps.map((map) => ReadingLog.fromMap(map)).toList();
+    notifyListeners();
+  }
+
+  Future<void> addLog({
     required String bookId,
     required String bookTitle,
     required int pagesRead,
-  }) {
+  }) async {
     final log = ReadingLog(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       bookId: bookId,
@@ -24,34 +33,50 @@ class ProgressProvider extends ChangeNotifier {
       pagesRead: pagesRead,
       timestamp: DateTime.now(),
     );
+
+    final db = await DBHelper.instance.database;
+    await db.insert('reading_logs', log.toMap());
+
     _logs.add(log);
     notifyListeners();
   }
 
-  void updateLog(String id, int newPagesRead) {
+  Future<void> updateLog(String id, int newPagesRead) async {
     final index = _logs.indexWhere((l) => l.id == id);
     if (index == -1) return;
-    _logs[index] = ReadingLog(
+
+    final updated = ReadingLog(
       id: _logs[index].id,
       bookId: _logs[index].bookId,
       bookTitle: _logs[index].bookTitle,
       pagesRead: newPagesRead,
       timestamp: _logs[index].timestamp,
     );
+
+    final db = await DBHelper.instance.database;
+    await db.update(
+      'reading_logs',
+      updated.toMap(),
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    _logs[index] = updated;
     notifyListeners();
   }
 
-  void removeLog(String id) {
+  Future<void> removeLog(String id) async {
+    final db = await DBHelper.instance.database;
+    await db.delete('reading_logs', where: 'id = ?', whereArgs: [id]);
+
     _logs.removeWhere((l) => l.id == id);
     notifyListeners();
   }
 
   int get totalPagesRead => _logs.fold(0, (sum, log) => sum + log.pagesRead);
 
-  int get distinctBooksLogged =>
-      _logs.map((l) => l.bookId).toSet().length;
+  int get distinctBooksLogged => _logs.map((l) => l.bookId).toSet().length;
 
-  /// Returns pages read per day for the last 7 days, oldest first.
   List<int> get weeklyPages {
     final now = DateTime.now();
     final days = List.generate(7, (i) => now.subtract(Duration(days: 6 - i)));
