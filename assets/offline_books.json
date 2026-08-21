@@ -1,0 +1,35 @@
+[
+  {
+    "id": "offline-1",
+    "title": "Atomic Habits",
+    "author": "James Clear",
+    "coverUrl": "https://covers.openlibrary.org/b/id/8231856-L.jpg",
+    "genre": "Self-Help",
+    "rating": 4.5,
+    "description": "An easy and proven way to build good habits and break bad ones, focused on tiny changes that compound into remarkable results.",
+    "pageCount": 320,
+    "publishYear": 2018
+  },
+  {
+    "id": "offline-2",
+    "title": "Dune",
+    "author": "Frank Herbert",
+    "coverUrl": "https://covers.openlibrary.org/b/id/8109669-L.jpg",
+    "genre": "Sci-Fi",
+    "rating": 4.8,
+    "description": "Set on the desert planet Arrakis, Dune is the story of Paul Atreides and the struggle for control of the universe's most valuable resource.",
+    "pageCount": 412,
+    "publishYear": 1965
+  },
+  {
+    "id": "offline-3",
+    "title": "Project Hail Mary",
+    "author": "Andy Weir",
+    "coverUrl": "https://covers.openlibrary.org/b/id/10521270-L.jpg",
+    "genre": "Sci-Fi",
+    "rating": 4.7,
+    "description": "A lone astronaut must save the earth from disaster in this incredible new science-based thriller.",
+    "pageCount": 476,
+    "publishYear": 2021
+  }
+]

@@ -20,15 +20,55 @@ class Book {
     required this.pageCount,
     required this.publishYear,
   });
+
+  /// Parses a single result from Open Library's /search.json response.
+  factory Book.fromSearchJson(Map<String, dynamic> json) {
+    final coverId = json['cover_i'];
+    final authors = json['author_name'] as List<dynamic>?;
+    final subjects = json['subject'] as List<dynamic>?;
+
+    return Book(
+      id: (json['key'] as String).replaceAll('/works/', ''),
+      title: json['title'] as String? ?? 'Untitled',
+      author: authors != null && authors.isNotEmpty
+          ? authors.first as String
+          : 'Unknown author',
+      coverUrl: coverId != null
+          ? 'https://covers.openlibrary.org/b/id/$coverId-L.jpg'
+          : 'https://covers.openlibrary.org/b/id/0-L.jpg',
+      genre: subjects != null && subjects.isNotEmpty
+          ? subjects.first as String
+          : 'General',
+      rating: 4.0, // Open Library search doesn't return ratings directly
+      description: 'Tap to view more details about this book.',
+      pageCount: json['number_of_pages_median'] as int? ?? 0,
+      publishYear: json['first_publish_year'] as int? ?? 0,
+    );
+  }
+
+  /// Parses a book from the bundled offline JSON asset.
+  factory Book.fromOfflineJson(Map<String, dynamic> json) {
+    return Book(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      author: json['author'] as String,
+      coverUrl: json['coverUrl'] as String,
+      genre: json['genre'] as String,
+      rating: (json['rating'] as num).toDouble(),
+      description: json['description'] as String,
+      pageCount: json['pageCount'] as int,
+      publishYear: json['publishYear'] as int,
+    );
+  }
 }
 
-// Static sample data used for the UI-only prototype stage.
+// Kept as a fallback / initial reference list.
 final sampleBooks = [
   const Book(
     id: '1',
     title: 'Atomic Habits',
     author: 'James Clear',
-    coverUrl: 'https://covers.openlibrary.org/b/id/15217381-L.jpg',
+    coverUrl: 'https://covers.openlibrary.org/b/id/8231856-L.jpg',
     genre: 'Self-Help',
     rating: 4.5,
     description:

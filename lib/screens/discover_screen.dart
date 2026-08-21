@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models/book.dart';
+import '../repositories/book_repositories.dart';
 import 'book_detail_screen.dart';
 import 'my_library_screen.dart';
 import 'progress_screen.dart';
@@ -13,53 +15,146 @@ class DiscoverScreen extends StatefulWidget {
 }
 
 class _DiscoverScreenState extends State<DiscoverScreen> {
-  String _selectedGenre = 'All';
-  final _genres = ['All', 'Fiction', 'Sci-Fi', 'Self-Help', 'Non-Fiction'];
+  final _repository = BookRepository();
+  final _searchController = TextEditingController();
+
+  List<Book> _books = [];
+  bool _isLoading = true;
+  bool _isOffline = false;
+  bool _isSearching = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBooks('bestsellers');
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadBooks(String query) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final connectivityResult = await Connectivity().checkConnectivity();
+    final hasConnection = !connectivityResult.contains(ConnectivityResult.none);
+
+    if (!hasConnection) {
+      final offlineBooks = await _repository.loadOfflineBooks();
+      setState(() {
+        _books = offlineBooks;
+        _isOffline = true;
+        _isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      final results = await _repository.searchBooks(query);
+      setState(() {
+        _books = results;
+        _isOffline = false;
+        _isLoading = false;
+      });
+    } catch (e) {
+      final offlineBooks = await _repository.loadOfflineBooks();
+      setState(() {
+        _books = offlineBooks;
+        _isOffline = true;
+        _isLoading = false;
+        _errorMessage = 'Could not reach the server. Showing offline books.';
+      });
+    }
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _isSearching = !_isSearching;
+      if (!_isSearching) {
+        _searchController.clear();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final filteredBooks = _selectedGenre == 'All'
-        ? sampleBooks
-        : sampleBooks.where((b) => b.genre == _selectedGenre).toList();
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('BookNook'),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Search for a book...',
+                  border: InputBorder.none,
+                ),
+                onSubmitted: (query) {
+                  if (query.trim().isNotEmpty) _loadBooks(query.trim());
+                },
+              )
+            : const Text('BookNook'),
         actions: [
-          IconButton(icon: const Icon(Icons.search), onPressed: () {}),
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: _toggleSearch,
+          ),
         ],
       ),
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= 700;
-
-            return OrientationBuilder(
-              builder: (context, orientation) {
-                final isLandscape = orientation == Orientation.landscape;
-                final useGrid = isWide || isLandscape;
-
-                return Column(
+        child: Column(
+          children: [
+            if (_isOffline)
+              Container(
+                width: double.infinity,
+                color: colorScheme.errorContainer,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                child: Row(
                   children: [
-                    _GenreFilterRow(
-                      genres: _genres,
-                      selectedGenre: _selectedGenre,
-                      onSelected: (genre) => setState(() => _selectedGenre = genre),
-                    ),
-                    const SizedBox(height: 8),
+                    Icon(Icons.wifi_off, size: 18, color: colorScheme.onErrorContainer),
+                    const SizedBox(width: 8),
                     Expanded(
-                      child: useGrid
-                          ? _BookGrid(
-                              books: filteredBooks,
-                              crossAxisCount: isWide ? 4 : 3,
-                            )
-                          : _BookList(books: filteredBooks),
+                      child: Text(
+                        _errorMessage ?? "You're offline — showing saved books.",
+                        style: TextStyle(color: colorScheme.onErrorContainer, fontSize: 13),
+                      ),
                     ),
                   ],
-                );
-              },
-            );
-          },
+                ),
+              ),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _books.isEmpty
+                      ? const Center(child: Text('No books found'))
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isWide = constraints.maxWidth >= 700;
+                            return OrientationBuilder(
+                              builder: (context, orientation) {
+                                final isLandscape =
+                                    orientation == Orientation.landscape;
+                                final useGrid = isWide || isLandscape;
+
+                                return useGrid
+                                    ? _BookGrid(
+                                        books: _books,
+                                        crossAxisCount: isWide ? 4 : 3,
+                                      )
+                                    : _BookList(books: _books);
+                              },
+                            );
+                          },
+                        ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: NavigationBar(
@@ -88,44 +183,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 }
 
-/// Genre filter chip row — shared by both layouts
-class _GenreFilterRow extends StatelessWidget {
-  final List<String> genres;
-  final String selectedGenre;
-  final ValueChanged<String> onSelected;
-
-  const _GenreFilterRow({
-    required this.genres,
-    required this.selectedGenre,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 48,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: genres.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final genre = genres[index];
-          return ChoiceChip(
-            label: Text(genre),
-            selected: genre == selectedGenre,
-            onSelected: (_) => onSelected(genre),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// Portrait / narrow layout — vertical scrollable list with wide cards
 class _BookList extends StatelessWidget {
   final List<Book> books;
-
   const _BookList({required this.books});
 
   @override
@@ -133,14 +192,18 @@ class _BookList extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 16, top: 8),
       itemCount: books.length,
       itemBuilder: (context, index) {
         final book = books[index];
         return Card(
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            onTap: () => _openDetail(context, book),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => BookDetailScreen(book: book)),
+              );
+            },
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
@@ -200,11 +263,9 @@ class _BookList extends StatelessWidget {
   }
 }
 
-/// Landscape / wide layout — grid of cover-forward cards
 class _BookGrid extends StatelessWidget {
   final List<Book> books;
   final int crossAxisCount;
-
   const _BookGrid({required this.books, required this.crossAxisCount});
 
   @override
@@ -224,7 +285,11 @@ class _BookGrid extends StatelessWidget {
         final book = books[index];
         return InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () => _openDetail(context, book),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => BookDetailScreen(book: book)),
+            );
+          },
           child: Card(
             margin: EdgeInsets.zero,
             clipBehavior: Clip.antiAlias,
@@ -250,21 +315,15 @@ class _BookGrid extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        book.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      Text(
-                        book.author,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
+                      Text(book.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleSmall),
+                      Text(book.author,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: 12, color: colorScheme.onSurfaceVariant)),
                     ],
                   ),
                 ),
@@ -275,10 +334,4 @@ class _BookGrid extends StatelessWidget {
       },
     );
   }
-}
-
-void _openDetail(BuildContext context, Book book) {
-  Navigator.of(context).push(
-    MaterialPageRoute(builder: (_) => BookDetailScreen(book: book)),
-  );
 }
