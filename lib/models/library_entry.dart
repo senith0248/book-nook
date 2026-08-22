@@ -1,5 +1,6 @@
 class LibraryEntry {
   final String id;
+  final String userId;
   final String bookId;
   final String title;
   final String author;
@@ -10,6 +11,7 @@ class LibraryEntry {
 
   LibraryEntry({
     required this.id,
+    required this.userId,
     required this.bookId,
     required this.title,
     required this.author,
@@ -22,6 +24,7 @@ class LibraryEntry {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'userId': userId,
       'bookId': bookId,
       'title': title,
       'author': author,
@@ -35,6 +38,7 @@ class LibraryEntry {
   factory LibraryEntry.fromMap(Map<String, dynamic> map) {
     return LibraryEntry(
       id: map['id'] as String,
+      userId: map['userId'] as String? ?? '',
       bookId: map['bookId'] as String,
       title: map['title'] as String,
       author: map['author'] as String,

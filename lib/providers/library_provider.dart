@@ -1,21 +1,31 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../database/db_helper.dart';
 import '../models/library_entry.dart';
 
-/// Manages the user's saved books, backed by the SQLite
-/// library_entries table. All Create/Read/Update/Delete operations
-/// go through DBHelper, and notifyListeners() keeps the UI reactive.
 class LibraryProvider extends ChangeNotifier {
   List<LibraryEntry> _entries = [];
 
   List<LibraryEntry> get entries => List.unmodifiable(_entries);
 
+  String? get _currentUserId => FirebaseAuth.instance.currentUser?.uid;
+
   bool isSaved(String bookId) => _entries.any((e) => e.bookId == bookId);
 
-  /// Loads all saved entries from SQLite. Call this once at startup.
   Future<void> loadEntries() async {
+    final userId = _currentUserId;
+    if (userId == null) {
+      _entries = [];
+      notifyListeners();
+      return;
+    }
+
     final db = await DBHelper.instance.database;
-    final maps = await db.query('library_entries');
+    final maps = await db.query(
+      'library_entries',
+      where: 'userId = ?',
+      whereArgs: [userId],
+    );
     _entries = maps.map((map) => LibraryEntry.fromMap(map)).toList();
     notifyListeners();
   }
@@ -26,10 +36,12 @@ class LibraryProvider extends ChangeNotifier {
     required String author,
     required String coverUrl,
   }) async {
-    if (isSaved(bookId)) return;
+    final userId = _currentUserId;
+    if (userId == null || isSaved(bookId)) return;
 
     final entry = LibraryEntry(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
+      userId: userId,
       bookId: bookId,
       title: title,
       author: author,

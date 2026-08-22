@@ -3,7 +3,8 @@ import 'package:path/path.dart';
 
 /// Central SQLite database helper. Creates and manages two tables:
 /// library_entries and reading_logs. All CRUD in the app goes through
-/// this single database instance.
+/// this single database instance. Each row is tagged with a userId so
+/// that data is scoped to the currently logged-in Firebase user.
 class DBHelper {
   static final DBHelper instance = DBHelper._internal();
   DBHelper._internal();
@@ -27,6 +28,7 @@ class DBHelper {
         await db.execute('''
           CREATE TABLE library_entries (
             id TEXT PRIMARY KEY,
+            userId TEXT,
             bookId TEXT,
             title TEXT,
             author TEXT,
@@ -40,6 +42,7 @@ class DBHelper {
         await db.execute('''
           CREATE TABLE reading_logs (
             id TEXT PRIMARY KEY,
+            userId TEXT,
             bookId TEXT,
             bookTitle TEXT,
             pagesRead INTEGER,

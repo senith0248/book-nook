@@ -1,9 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../database/db_helper.dart';
 import '../models/reading_log.dart';
 
-/// Manages reading log entries, backed by the SQLite reading_logs
-/// table, and exposes aggregated stats for the Progress screen.
 class ProgressProvider extends ChangeNotifier {
   List<ReadingLog> _logs = [];
 
@@ -13,10 +12,22 @@ class ProgressProvider extends ChangeNotifier {
     return sorted;
   }
 
-  /// Loads all logs from SQLite. Call this once at startup.
+  String? get _currentUserId => FirebaseAuth.instance.currentUser?.uid;
+
   Future<void> loadLogs() async {
+    final userId = _currentUserId;
+    if (userId == null) {
+      _logs = [];
+      notifyListeners();
+      return;
+    }
+
     final db = await DBHelper.instance.database;
-    final maps = await db.query('reading_logs');
+    final maps = await db.query(
+      'reading_logs',
+      where: 'userId = ?',
+      whereArgs: [userId],
+    );
     _logs = maps.map((map) => ReadingLog.fromMap(map)).toList();
     notifyListeners();
   }
@@ -26,8 +37,12 @@ class ProgressProvider extends ChangeNotifier {
     required String bookTitle,
     required int pagesRead,
   }) async {
+    final userId = _currentUserId;
+    if (userId == null) return;
+
     final log = ReadingLog(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
+      userId: userId,
       bookId: bookId,
       bookTitle: bookTitle,
       pagesRead: pagesRead,
@@ -47,6 +62,7 @@ class ProgressProvider extends ChangeNotifier {
 
     final updated = ReadingLog(
       id: _logs[index].id,
+      userId: _logs[index].userId,
       bookId: _logs[index].bookId,
       bookTitle: _logs[index].bookTitle,
       pagesRead: newPagesRead,
@@ -74,13 +90,11 @@ class ProgressProvider extends ChangeNotifier {
   }
 
   int get totalPagesRead => _logs.fold(0, (sum, log) => sum + log.pagesRead);
-
   int get distinctBooksLogged => _logs.map((l) => l.bookId).toSet().length;
 
   List<int> get weeklyPages {
     final now = DateTime.now();
     final days = List.generate(7, (i) => now.subtract(Duration(days: 6 - i)));
-
     return days.map((day) {
       return _logs
           .where((log) =>

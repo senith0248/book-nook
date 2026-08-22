@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 import 'discover_screen.dart';
 import 'my_library_screen.dart';
 import 'progress_screen.dart';
 import 'login_screen.dart';
+import '../providers/library_provider.dart';
+import '../providers/progress_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -10,6 +14,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
@@ -25,9 +30,14 @@ class ProfileScreen extends StatelessWidget {
                   child: Icon(Icons.person, size: 40, color: colorScheme.onPrimaryContainer),
                 ),
                 const SizedBox(height: 12),
-                Text('Jane Reader', style: Theme.of(context).textTheme.titleLarge),
-                Text('jane.reader@email.com',
-                    style: TextStyle(color: colorScheme.onSurfaceVariant)),
+                Text(
+                  user?.displayName ?? 'Reader',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                Text(
+                  user?.email ?? '',
+                  style: TextStyle(color: colorScheme.onSurfaceVariant),
+                ),
               ],
             ),
           ),
@@ -63,7 +73,14 @@ class ProfileScreen extends StatelessWidget {
             child: ListTile(
               leading: Icon(Icons.logout, color: colorScheme.error),
               title: Text('Log Out', style: TextStyle(color: colorScheme.error)),
-              onTap: () {
+              onTap: () async {
+                await FirebaseAuth.instance.signOut();
+
+                if (!context.mounted) return;
+                await context.read<LibraryProvider>().loadEntries();
+                await context.read<ProgressProvider>().loadLogs();
+
+                if (!context.mounted) return;
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (_) => const LoginScreen()),
                   (route) => false,
