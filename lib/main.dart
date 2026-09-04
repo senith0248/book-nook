@@ -29,7 +29,7 @@ class BookNookApp extends StatelessWidget {
         title: 'BookNook',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
-        darkTheme: AppTheme.dark(),
+        darkTheme: AppTheme.dark(), 
         themeMode: ThemeMode.system,
         home: const LoginScreen(),
       ),

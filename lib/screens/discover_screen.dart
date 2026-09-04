@@ -134,10 +134,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   ? const Center(child: CircularProgressIndicator())
                   : _books.isEmpty
                       ? const Center(child: Text('No books found'))
-                      : LayoutBuilder(
+                      : LayoutBuilder( //table layout
                           builder: (context, constraints) {
                             final isWide = constraints.maxWidth >= 700;
-                            return OrientationBuilder(
+                            return OrientationBuilder( //orientation builder to handle landscape mode
                               builder: (context, orientation) {
                                 final isLandscape =
                                     orientation == Orientation.landscape;
