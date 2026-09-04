@@ -22,41 +22,138 @@ class MyLibraryScreen extends StatelessWidget {
             return const Center(child: Text('No books saved yet'));
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.only(top: 8, bottom: 16),
-            itemCount: savedBooks.length,
-            itemBuilder: (context, index) {
-              final entry = savedBooks[index];
-              return Card(
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(12),
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      entry.coverUrl,
-                      width: 48,
-                      height: 72,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        width: 48,
-                        height: 72,
-                        color: colorScheme.surfaceContainerHighest,
-                        child: const Icon(Icons.menu_book_outlined),
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth >= 700;
+              return OrientationBuilder(
+                builder: (context, orientation) {
+                  final isLandscape = orientation == Orientation.landscape;
+                  final useGrid = isWide || isLandscape;
+
+                  if (useGrid) {
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: isWide ? 4 : 3,
+                        childAspectRatio: 0.68,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
                       ),
-                    ),
-                  ),
-                  title: Text(entry.title),
-                  subtitle: Text(entry.author),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () {
-                      libraryProvider.removeEntry(entry.id);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Removed from library')),
+                      itemCount: savedBooks.length,
+                      itemBuilder: (context, index) {
+                        final entry = savedBooks[index];
+                        return Card(
+                          margin: EdgeInsets.zero,
+                          clipBehavior: Clip.antiAlias,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 4,
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    Image.network(
+                                      entry.coverUrl,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        color: colorScheme.surfaceContainerHighest,
+                                        child: const Icon(Icons.menu_book_outlined),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 2,
+                                      right: 2,
+                                      child: IconButton(
+                                        icon: const Icon(Icons.delete_outline, size: 18),
+                                        color: Colors.white,
+                                        style: IconButton.styleFrom(
+                                          backgroundColor: Colors.black45,
+                                          minimumSize: const Size(28, 28),
+                                          padding: EdgeInsets.zero,
+                                        ),
+                                        onPressed: () {
+                                          libraryProvider.removeEntry(entry.id);
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Expanded(
+                                flex: 1,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 4),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        entry.title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                            fontSize: 12, fontWeight: FontWeight.w600),
+                                      ),
+                                      Text(
+                                        entry.author,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            color: colorScheme.onSurfaceVariant),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.only(top: 8, bottom: 16),
+                    itemCount: savedBooks.length,
+                    itemBuilder: (context, index) {
+                      final entry = savedBooks[index];
+                      return Card(
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(12),
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              entry.coverUrl,
+                              width: 48,
+                              height: 72,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 48,
+                                height: 72,
+                                color: colorScheme.surfaceContainerHighest,
+                                child: const Icon(Icons.menu_book_outlined),
+                              ),
+                            ),
+                          ),
+                          title: Text(entry.title),
+                          subtitle: Text(entry.author),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            onPressed: () {
+                              libraryProvider.removeEntry(entry.id);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Removed from library')),
+                              );
+                            },
+                          ),
+                        ),
                       );
                     },
-                  ),
-                ),
+                  );
+                },
               );
             },
           );

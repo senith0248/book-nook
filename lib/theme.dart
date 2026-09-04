@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 /// Central Material 3 theme for BookNook.
 /// A single warm brown seed color generates a full, accessible tonal
 /// palette for both light and dark mode via ColorScheme.fromSeed.
-/// Typography pairs a serif for headings (book-like feel) with a
+/// Typography pairs a serif for headings with a
 /// clean sans-serif for body text.
 class AppTheme {
   static const _seedColor = Color(0xFF6B4226); // warm library brown

@@ -11,6 +11,81 @@ import '../providers/progress_provider.dart';
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
+  Widget _buildAvatarSection(BuildContext context, ColorScheme colorScheme, User? user) {
+    return Column(
+      children: [
+        CircleAvatar(
+          radius: 40,
+          backgroundColor: colorScheme.primaryContainer,
+          child: Icon(Icons.person, size: 40, color: colorScheme.onPrimaryContainer),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          user?.displayName ?? 'Reader',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        Text(
+          user?.email ?? '',
+          style: TextStyle(color: colorScheme.onSurfaceVariant),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSettingsSection(BuildContext context, ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Card(
+          child: Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.dark_mode_outlined),
+                title: const Text('Theme'),
+                subtitle: const Text('Follows device setting'),
+                trailing: Switch(value: false, onChanged: (_) {}),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.notifications_outlined),
+                title: const Text('Notifications'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {},
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.shuffle),
+                title: const Text('Shake for a random book'),
+                subtitle: const Text('Shake your phone anytime'),
+                onTap: () {},
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: ListTile(
+            leading: Icon(Icons.logout, color: colorScheme.error),
+            title: Text('Log Out', style: TextStyle(color: colorScheme.error)),
+            onTap: () async {
+              await FirebaseAuth.instance.signOut();
+
+              if (!context.mounted) return;
+              await context.read<LibraryProvider>().loadEntries();
+              await context.read<ProgressProvider>().loadLogs();
+
+              if (!context.mounted) return;
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -18,77 +93,51 @@ class ProfileScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Center(
-            child: Column(
-              children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: colorScheme.primaryContainer,
-                  child: Icon(Icons.person, size: 40, color: colorScheme.onPrimaryContainer),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  user?.displayName ?? 'Reader',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                Text(
-                  user?.email ?? '',
-                  style: TextStyle(color: colorScheme.onSurfaceVariant),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.dark_mode_outlined),
-                  title: const Text('Theme'),
-                  subtitle: const Text('Follows device setting'),
-                  trailing: Switch(value: false, onChanged: (_) {}),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.notifications_outlined),
-                  title: const Text('Notifications'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.shuffle),
-                  title: const Text('Shake for a random book'),
-                  subtitle: const Text('Shake your phone anytime'),
-                  onTap: () {},
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: ListTile(
-              leading: Icon(Icons.logout, color: colorScheme.error),
-              title: Text('Log Out', style: TextStyle(color: colorScheme.error)),
-              onTap: () async {
-                await FirebaseAuth.instance.signOut();
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 700;
 
-                if (!context.mounted) return;
-                await context.read<LibraryProvider>().loadEntries();
-                await context.read<ProgressProvider>().loadLogs();
+            return OrientationBuilder(
+              builder: (context, orientation) {
+                final isLandscape = orientation == Orientation.landscape;
+                final useSideBySide = isWide || isLandscape;
 
-                if (!context.mounted) return;
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (route) => false,
+                if (useSideBySide) {
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 4,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 16),
+                            child: _buildAvatarSection(context, colorScheme, user),
+                          ),
+                        ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          flex: 6,
+                          child: _buildSettingsSection(context, colorScheme),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Center(child: _buildAvatarSection(context, colorScheme, user)),
+                    const SizedBox(height: 24),
+                    _buildSettingsSection(context, colorScheme),
+                  ],
                 );
               },
-            ),
-          ),
-        ],
+            );
+          },
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: 3, // Profile

@@ -9,6 +9,126 @@ import 'profile_screen.dart';
 class ProgressScreen extends StatelessWidget {
   const ProgressScreen({super.key});
 
+  Widget _buildStatsCard(BuildContext context, ThemeData theme, ColorScheme colorScheme,
+      ProgressProvider progressProvider) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _StatColumn(
+            value: '${progressProvider.distinctBooksLogged}',
+            label: 'Books Read',
+            colorScheme: colorScheme,
+          ),
+          _StatColumn(
+            value: '${(progressProvider.totalPagesRead / 1000).toStringAsFixed(1)}k',
+            label: 'Pages Read',
+            colorScheme: colorScheme,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChartCard(BuildContext context, ThemeData theme, ColorScheme colorScheme,
+      List<int> weeklyPages, List<String> weekLabels) {
+    final maxVal = weeklyPages.isEmpty
+        ? 1
+        : weeklyPages.reduce((a, b) => a > b ? a : b).clamp(1, 999999);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Pages Read This Week', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 150,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(weeklyPages.length, (i) {
+                  final barHeight = (weeklyPages[i] / maxVal) * 90;
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          '${weeklyPages[i]}',
+                          style: theme.textTheme.labelSmall,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        width: 24,
+                        height: barHeight < 4 ? 4 : barHeight,
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Flexible(
+                        child: Text(
+                          weekLabels[i],
+                          style: theme.textTheme.labelSmall,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogsSection(BuildContext context, ThemeData theme, ColorScheme colorScheme,
+      ProgressProvider progressProvider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Recent Logs', style: theme.textTheme.titleMedium),
+        const SizedBox(height: 8),
+        if (progressProvider.logs.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: Text('No reading logged yet')),
+          )
+        else
+          ...progressProvider.logs.map((log) {
+            return Card(
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: colorScheme.secondaryContainer,
+                  child: Icon(Icons.menu_book_outlined,
+                      color: colorScheme.onSecondaryContainer),
+                ),
+                title: Text(log.bookTitle),
+                subtitle: Text('Read ${log.pagesRead} pages'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 20),
+                  onPressed: () => progressProvider.removeLog(log.id),
+                ),
+              ),
+            );
+          }),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -20,116 +140,58 @@ class ProgressScreen extends StatelessWidget {
       body: Consumer<ProgressProvider>(
         builder: (context, progressProvider, _) {
           final weeklyPages = progressProvider.weeklyPages;
-          final maxVal = weeklyPages.isEmpty
-              ? 1
-              : weeklyPages.reduce((a, b) => a > b ? a : b).clamp(1, 999999);
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _StatColumn(
-                      value: '${progressProvider.distinctBooksLogged}',
-                      label: 'Books Read',
-                      colorScheme: colorScheme,
-                    ),
-                    _StatColumn(
-                      value:
-                          '${(progressProvider.totalPagesRead / 1000).toStringAsFixed(1)}k',
-                      label: 'Pages Read',
-                      colorScheme: colorScheme,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Pages Read This Week', style: theme.textTheme.titleMedium),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        height: 150,
+          return SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth >= 700;
+
+                return OrientationBuilder(
+                  builder: (context, orientation) {
+                    final isLandscape = orientation == Orientation.landscape;
+                    final useSideBySide = isWide || isLandscape;
+
+                    if (useSideBySide) {
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
                         child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: List.generate(weeklyPages.length, (i) {
-                            final barHeight = (weeklyPages[i] / maxVal) * 90;
-                            return Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    '${weeklyPages[i]}',
-                                    style: theme.textTheme.labelSmall,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Container(
-                                  width: 24,
-                                  height: barHeight < 4 ? 4 : barHeight,
-                                  decoration: BoxDecoration(
-                                    color: colorScheme.primary,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Flexible(
-                                  child: Text(
-                                    weekLabels[i],
-                                    style: theme.textTheme.labelSmall,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            );
-                          }),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 5,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildStatsCard(context, theme, colorScheme, progressProvider),
+                                  const SizedBox(height: 16),
+                                  _buildChartCard(context, theme, colorScheme, weeklyPages, weekLabels),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              flex: 5,
+                              child: _buildLogsSection(context, theme, colorScheme, progressProvider),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text('Recent Logs', style: theme.textTheme.titleMedium),
-              const SizedBox(height: 8),
-              if (progressProvider.logs.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Center(child: Text('No reading logged yet')),
-                )
-              else
-                ...progressProvider.logs.map((log) {
-                  return Card(
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: colorScheme.secondaryContainer,
-                        child: Icon(Icons.menu_book_outlined,
-                            color: colorScheme.onSecondaryContainer),
-                      ),
-                      title: Text(log.bookTitle),
-                      subtitle: Text('Read ${log.pagesRead} pages'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete_outline, size: 20),
-                        onPressed: () => progressProvider.removeLog(log.id),
-                      ),
-                    ),
-                  );
-                }),
-            ],
+                      );
+                    }
+
+                    return ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        _buildStatsCard(context, theme, colorScheme, progressProvider),
+                        const SizedBox(height: 16),
+                        _buildChartCard(context, theme, colorScheme, weeklyPages, weekLabels),
+                        const SizedBox(height: 16),
+                        _buildLogsSection(context, theme, colorScheme, progressProvider),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
           );
         },
       ),
@@ -200,9 +262,8 @@ class ProgressScreen extends StatelessWidget {
                     onChanged: (value) {
                       setState(() {
                         selectedBookId = value;
-                        selectedBookTitle = savedBooks
-                            .firstWhere((e) => e.bookId == value)
-                            .title;
+                        selectedBookTitle =
+                            savedBooks.firstWhere((e) => e.bookId == value).title;
                       });
                     },
                   ),
