@@ -1,0 +1,35 @@
+[
+  {
+    "id": "featured-1",
+    "title": "The Hobbit",
+    "author": "J.R.R. Tolkien",
+    "coverUrl": "https://covers.openlibrary.org/b/id/6979861-L.jpg",
+    "genre": "Fantasy",
+    "rating": 4.9,
+    "description": "Bilbo Baggins is swept into an epic quest to reclaim the Lonely Mountain from the dragon Smaug.",
+    "pageCount": 310,
+    "publishYear": 1937
+  },
+  {
+    "id": "featured-2",
+    "title": "1984",
+    "author": "George Orwell",
+    "coverUrl": "https://covers.openlibrary.org/b/id/7222246-L.jpg",
+    "genre": "Dystopian",
+    "rating": 4.8,
+    "description": "A chilling vision of a totalitarian future where independent thought is a crime.",
+    "pageCount": 328,
+    "publishYear": 1949
+  },
+  {
+    "id": "featured-3",
+    "title": "The Alchemist",
+    "author": "Paulo Coelho",
+    "coverUrl": "https://covers.openlibrary.org/b/id/8235116-L.jpg",
+    "genre": "Fiction",
+    "rating": 4.6,
+    "description": "A shepherd boy's journey to find treasure teaches him to listen to his heart and follow his dreams.",
+    "pageCount": 208,
+    "publishYear": 1988
+  }
+]
