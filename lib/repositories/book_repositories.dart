@@ -35,4 +35,21 @@ class BookRepository {
         .map((item) => Book.fromOfflineJson(item as Map<String, dynamic>))
         .toList();
   }
+  /// Fetches a genuinely external, hosted JSON file (distinct from the
+/// public API search) — a static "Featured Picks" list hosted on GitHub.
+Future<List<Book>> fetchFeaturedBooks() async {
+    final uri = Uri.parse(
+      'https://raw.githubusercontent.com/senith0248/book-nook/main/lib/data/featured_book.json',
+    );
+    final response = await http.get(uri).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch featured books: ${response.statusCode}');
+    }
+
+    final data = jsonDecode(response.body) as List<dynamic>;
+    return data
+        .map((item) => Book.fromOfflineJson(item as Map<String, dynamic>))
+        .toList();
+  }
 }

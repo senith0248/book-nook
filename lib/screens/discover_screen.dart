@@ -24,10 +24,14 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   bool _isSearching = false;
   String? _errorMessage;
 
+  List<Book> _featuredBooks = [];
+  bool _isFeaturedLoading = true;
+
   @override
   void initState() {
     super.initState();
     _loadBooks('bestsellers');
+    _loadFeaturedBooks();
   }
 
   @override
@@ -70,6 +74,21 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         _isLoading = false;
         _errorMessage = 'Could not reach the server. Showing offline books.';
       });
+    }
+  }
+
+  /// Fetches a genuinely external, hosted JSON file (a static "Featured
+  /// Picks" list hosted on GitHub) — distinct from the public API search
+  /// and the bundled local offline JSON.
+  Future<void> _loadFeaturedBooks() async {
+    try {
+      final results = await _repository.fetchFeaturedBooks();
+      setState(() {
+        _featuredBooks = results;
+        _isFeaturedLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isFeaturedLoading = false);
     }
   }
 
@@ -129,6 +148,47 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   ],
                 ),
               ),
+            if (!_isFeaturedLoading && _featuredBooks.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Text(
+                  'Featured Picks',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              SizedBox(
+                height: 140,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _featuredBooks.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final book = _featuredBooks[index];
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => BookDetailScreen(book: book)),
+                        );
+                      },
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          book.coverUrl,
+                          width: 90,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            width: 90,
+                            color: colorScheme.surfaceContainerHighest,
+                            child: const Icon(Icons.menu_book_outlined),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -276,7 +336,7 @@ class _BookGrid extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        childAspectRatio: 0.68, 
+        childAspectRatio: 0.68,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
