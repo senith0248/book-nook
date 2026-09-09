@@ -148,16 +148,19 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   ],
                 ),
               ),
-            if (!_isFeaturedLoading && _featuredBooks.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Text(
-                  'Featured Picks',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
+             if (!_isFeaturedLoading && _featuredBooks.isNotEmpty) ...[
+                Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                 child: Align(
+                         alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Featured Picks',
+                         style: Theme.of(context).textTheme.titleMedium,
+                             ),
+                       ),
+                  ),
               SizedBox(
-                height: 140,
+                height: 190,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -171,16 +174,37 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           MaterialPageRoute(builder: (_) => BookDetailScreen(book: book)),
                         );
                       },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          book.coverUrl,
-                          width: 90,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            width: 90,
-                            color: colorScheme.surfaceContainerHighest,
-                            child: const Icon(Icons.menu_book_outlined),
+                      child: SizedBox(
+                        width: 110,
+                        child: Card(
+                          margin: EdgeInsets.zero,
+                          clipBehavior: Clip.antiAlias,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Image.network(
+                                  book.coverUrl,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: colorScheme.surfaceContainerHighest,
+                                    child: const Icon(Icons.menu_book_outlined),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                                child: Text(
+                                  book.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontSize: 11, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -188,6 +212,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   },
                 ),
               ),
+              const SizedBox(height: 4),
+              Divider(color: colorScheme.outlineVariant, height: 1),
             ],
             Expanded(
               child: _isLoading

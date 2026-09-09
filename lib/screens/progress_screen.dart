@@ -5,6 +5,7 @@ import '../providers/library_provider.dart';
 import 'discover_screen.dart';
 import 'my_library_screen.dart';
 import 'profile_screen.dart';
+import '../services/location_service.dart';
 
 class ProgressScreen extends StatelessWidget {
   const ProgressScreen({super.key});
@@ -117,7 +118,13 @@ class ProgressScreen extends StatelessWidget {
                       color: colorScheme.onSecondaryContainer),
                 ),
                 title: Text(log.bookTitle),
-                subtitle: Text('Read ${log.pagesRead} pages'),
+                subtitle: Text(
+                  log.locationName != null && log.locationName!.isNotEmpty
+                      ? 'Read ${log.pagesRead} pages · ${log.locationName}'
+                      : (log.latitude != null && log.longitude != null
+                          ? 'Read ${log.pagesRead} pages · ${log.latitude!.toStringAsFixed(2)}°, ${log.longitude!.toStringAsFixed(2)}°'
+                          : 'Read ${log.pagesRead} pages'),
+                ),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete_outline, size: 20),
                   onPressed: () => progressProvider.removeLog(log.id),
@@ -285,12 +292,18 @@ class ProgressScreen extends StatelessWidget {
                     final pages = int.tryParse(pagesController.text);
                     if (pages == null || pages <= 0 || selectedBookId == null) return;
 
+                    Navigator.of(dialogContext).pop();
+
+                    // Save immediately — no waiting on location.
                     progressProvider.addLog(
                       bookId: selectedBookId!,
                       bookTitle: selectedBookTitle,
                       pagesRead: pages,
                     );
-                    Navigator.of(dialogContext).pop();
+
+                    // Fetch location in the background and attach it
+                    // once resolved, without blocking the UI.
+                    _attachLocationInBackground(context, progressProvider);
                   },
                   child: const Text('Save'),
                 ),
@@ -300,6 +313,39 @@ class ProgressScreen extends StatelessWidget {
         );
       },
     );
+  }
+  
+  
+
+  void _attachLocationInBackground(
+      BuildContext context, ProgressProvider progressProvider) async {
+    try {
+      final locationService = LocationService();
+      final position = await locationService.getCurrentPosition();
+      if (position == null) {
+        debugPrint('[BookNook] Location is null (disabled, denied, or timed out)');
+        return;
+      }
+
+      final placeName = await locationService.getPlaceName(
+        position.latitude,
+        position.longitude,
+      );
+      debugPrint('[BookNook] Fetched location: ${position.latitude}, ${position.longitude} -> $placeName');
+
+      if (progressProvider.logs.isNotEmpty) {
+        final latestLog = progressProvider.logs.first; // sorted newest-first
+        await progressProvider.attachLocation(
+          latestLog.id,
+          position.latitude,
+          position.longitude,
+          placeName,
+        );
+        debugPrint('[BookNook] Successfully attached location to log: ${latestLog.id}');
+      }
+    } catch (e, stack) {
+      debugPrint('[BookNook] Error in _attachLocationInBackground: $e\n$stack');
+    }
   }
 }
 

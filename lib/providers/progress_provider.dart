@@ -36,6 +36,9 @@ class ProgressProvider extends ChangeNotifier {
     required String bookId,
     required String bookTitle,
     required int pagesRead,
+    double? latitude,
+    double? longitude,
+    String? locationName,
   }) async {
     final userId = _currentUserId;
     if (userId == null) return;
@@ -47,12 +50,46 @@ class ProgressProvider extends ChangeNotifier {
       bookTitle: bookTitle,
       pagesRead: pagesRead,
       timestamp: DateTime.now(),
+      latitude: latitude,
+      longitude: longitude,
+      locationName: locationName,
     );
 
     final db = await DBHelper.instance.database;
     await db.insert('reading_logs', log.toMap());
 
     _logs.add(log);
+    notifyListeners();
+  }
+
+  /// Updates just the location fields on an existing log, without
+  /// blocking the initial save — used so location can be fetched
+  /// in the background after the log is already saved.
+  Future<void> attachLocation(String logId, double lat, double lng, String? name) async {
+    final index = _logs.indexWhere((l) => l.id == logId);
+    if (index == -1) return;
+
+    final updated = ReadingLog(
+      id: _logs[index].id,
+      userId: _logs[index].userId,
+      bookId: _logs[index].bookId,
+      bookTitle: _logs[index].bookTitle,
+      pagesRead: _logs[index].pagesRead,
+      timestamp: _logs[index].timestamp,
+      latitude: lat,
+      longitude: lng,
+      locationName: name,
+    );
+
+    final db = await DBHelper.instance.database;
+    await db.update(
+      'reading_logs',
+      updated.toMap(),
+      where: 'id = ?',
+      whereArgs: [logId],
+    );
+
+    _logs[index] = updated;
     notifyListeners();
   }
 

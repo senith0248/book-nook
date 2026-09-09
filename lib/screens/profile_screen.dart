@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
@@ -7,9 +8,82 @@ import 'progress_screen.dart';
 import 'login_screen.dart';
 import '../providers/library_provider.dart';
 import '../providers/progress_provider.dart';
+import '../services/shake_detector.dart';
+import '../models/book.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  late final ShakeDetector _shakeDetector;
+
+  @override
+  void initState() {
+    super.initState();
+    _shakeDetector = ShakeDetector(onShake: _showRandomBookSuggestion);
+    _shakeDetector.start();
+  }
+
+  @override
+  void dispose() {
+    _shakeDetector.stop();
+    super.dispose();
+  }
+
+  void _showRandomBookSuggestion() {
+    final random = sampleBooks[Random().nextInt(sampleBooks.length)];
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.shuffle, size: 32, color: colorScheme.primary),
+              const SizedBox(height: 12),
+              Text(
+                'How about this one?',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  random.coverUrl,
+                  height: 160,
+                  errorBuilder: (_, __, ___) => Container(
+                    height: 160,
+                    width: 110,
+                    color: colorScheme.surfaceContainerHighest,
+                    child: const Icon(Icons.menu_book_outlined),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(random.title, style: Theme.of(context).textTheme.titleMedium),
+              Text(random.author,
+                  style: TextStyle(color: colorScheme.onSurfaceVariant)),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Got it'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   Widget _buildAvatarSection(BuildContext context, ColorScheme colorScheme, User? user) {
     return Column(
@@ -57,7 +131,7 @@ class ProfileScreen extends StatelessWidget {
                 leading: const Icon(Icons.shuffle),
                 title: const Text('Shake for a random book'),
                 subtitle: const Text('Shake your phone anytime'),
-                onTap: () {},
+                onTap: _showRandomBookSuggestion,
               ),
             ],
           ),

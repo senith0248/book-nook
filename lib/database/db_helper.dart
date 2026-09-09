@@ -23,7 +23,7 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2, // bumped
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE library_entries (
@@ -46,9 +46,19 @@ class DBHelper {
             bookId TEXT,
             bookTitle TEXT,
             pagesRead INTEGER,
-            timestamp TEXT
+            timestamp TEXT,
+            latitude REAL,
+            longitude REAL,
+            locationName TEXT
           )
         ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('ALTER TABLE reading_logs ADD COLUMN latitude REAL');
+          await db.execute('ALTER TABLE reading_logs ADD COLUMN longitude REAL');
+          await db.execute('ALTER TABLE reading_logs ADD COLUMN locationName TEXT');
+        }
       },
     );
   }
